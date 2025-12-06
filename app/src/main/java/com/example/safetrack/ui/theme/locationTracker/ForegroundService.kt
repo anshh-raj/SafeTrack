@@ -6,16 +6,29 @@ import android.app.NotificationManager
 import android.app.Service
 import android.content.Context
 import android.content.Intent
+import android.os.Build
 import android.os.IBinder
+import android.telephony.SmsManager
 import android.util.Log
+import androidx.compose.ui.platform.LocalContext
 import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
 import com.example.safetrack.R
+import java.util.Timer
+import java.util.TimerTask
 
 class ForegroundService : Service(){
 
 
     private lateinit var locationHelper: LocationHelper
+
+    private var smsTimer: Timer? = null
+    private var elapsedMinutes = 0
+
+    private val emergencyNumbers = listOf(
+        "8340611053",
+        "7765937258"
+    )
 
     companion object{
 
@@ -25,7 +38,12 @@ class ForegroundService : Service(){
         fun startService(context: Context){
             val intent = Intent(context, ForegroundService::class.java)
 
-            context.startForegroundService(intent)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                context.startForegroundService(intent)
+            }
+            else{
+                context.startService(intent)
+            }
         }
 
         fun stopService(context: Context){
@@ -41,7 +59,9 @@ class ForegroundService : Service(){
 
         locationHelper = LocationHelper.getInstance(this)
 
-        createNotificationChannel()
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O){
+            createNotificationChannel()
+        }
 
         startForeground(NOTIF_ID, createNotification())
     }
@@ -52,12 +72,18 @@ class ForegroundService : Service(){
                 "LocationService",
                 "onStartCommand:  Lat: ${location.latitude} and Long: ${location.longitude}"
             )
+            val lat = location.latitude
+            val lng = location.longitude
+            val googleLink = "https://maps.google.com/?q=$lat,$lng"
+
+            startSmsTask(googleLink)
         }
         return START_STICKY
     }
 
     override fun onDestroy() {
         super.onDestroy()
+        smsTimer?.cancel()
         locationHelper.stopLocationUpdate()
     }
 
@@ -83,6 +109,35 @@ class ForegroundService : Service(){
             .setOngoing(true)
             .build()
         return notification
+    }
+
+    private fun startSmsTask(locationLink: String) {
+
+        if (smsTimer != null) return  // prevents duplicate timers
+
+        smsTimer = Timer()
+        smsTimer!!.scheduleAtFixedRate(object : TimerTask() {
+            override fun run() {
+
+                elapsedMinutes++
+
+                val message = "SOS! My live location:\n$locationLink"
+
+                emergencyNumbers.forEach { number ->
+                    sendSms(number, message)
+                }
+
+                if (elapsedMinutes >= 30) {
+                    smsTimer?.cancel()
+                    stopSelf()
+                }
+            }
+        }, 0, 60000L)
+    }
+
+    private fun sendSms(number: String, message: String){
+        val smsManager = getSystemService(SmsManager::class.java)
+        smsManager.sendTextMessage(number, null, message, null, null)
     }
 
 }
