@@ -16,7 +16,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             SafeTrackTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    HomeScreen(this)
+                    HomeScreen(this, innerPadding)
                 }
             }
         }

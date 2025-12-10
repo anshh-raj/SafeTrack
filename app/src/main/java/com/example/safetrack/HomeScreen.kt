@@ -6,7 +6,9 @@ import android.content.pm.PackageManager
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
@@ -24,7 +26,7 @@ import androidx.core.content.ContextCompat
 import com.example.safetrack.ui.theme.locationTracker.ForegroundService
 
 @Composable
-fun HomeScreen(context: Context){
+fun HomeScreen(context: Context, innerPadding: PaddingValues){
 
     var hasPermissions by remember { mutableStateOf(false) }
 
@@ -51,7 +53,9 @@ fun HomeScreen(context: Context){
     }
 
     Box(
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier
+            .padding(innerPadding)
+            .fillMaxSize(),
         contentAlignment = Alignment.Center
     ){
         Button(

@@ -10,7 +10,6 @@ import android.os.Build
 import android.os.IBinder
 import android.telephony.SmsManager
 import android.util.Log
-import androidx.compose.ui.platform.LocalContext
 import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
 import com.example.safetrack.R
@@ -27,7 +26,7 @@ class ForegroundService : Service(){
 
     private val emergencyNumbers = listOf(
         "8340611053",
-        "7765937258"
+        "8102489714"
     )
 
     companion object{
@@ -59,9 +58,7 @@ class ForegroundService : Service(){
 
         locationHelper = LocationHelper.getInstance(this)
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O){
-            createNotificationChannel()
-        }
+        createNotificationChannel()
 
         startForeground(NOTIF_ID, createNotification())
     }
@@ -92,13 +89,15 @@ class ForegroundService : Service(){
     }
 
     private fun createNotificationChannel() {
-        val channel = NotificationChannel(
-            CHANNEL_ID,
-            "SOS",
-            NotificationManager.IMPORTANCE_HIGH
-        )
-        val manager = ContextCompat.getSystemService(this, NotificationManager::class.java)
-        manager!!.createNotificationChannel(channel)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O){
+            val channel = NotificationChannel(
+                CHANNEL_ID,
+                "SOS",
+                NotificationManager.IMPORTANCE_HIGH
+            )
+            val manager = ContextCompat.getSystemService(this, NotificationManager::class.java)
+            manager!!.createNotificationChannel(channel)
+        }
     }
 
     private fun createNotification(): Notification{
@@ -116,7 +115,7 @@ class ForegroundService : Service(){
         if (smsTimer != null) return  // prevents duplicate timers
 
         smsTimer = Timer()
-        smsTimer!!.scheduleAtFixedRate(object : TimerTask() {
+        smsTimer!!.schedule(object : TimerTask() {
             override fun run() {
 
                 elapsedMinutes++
@@ -127,12 +126,12 @@ class ForegroundService : Service(){
                     sendSms(number, message)
                 }
 
-                if (elapsedMinutes >= 30) {
+                if (elapsedMinutes >= 15) {
                     smsTimer?.cancel()
                     stopSelf()
                 }
             }
-        }, 0, 60000L)
+        }, 0, 15000L)
     }
 
     private fun sendSms(number: String, message: String){
