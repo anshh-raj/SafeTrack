@@ -19,22 +19,15 @@ class LocationHelper (private val context: Context){
 
     private var  locationCallBack: LocationCallback? = null
 
-    companion object{
-
-        private var INSTANCE: LocationHelper? = null
-
-        fun getInstance(context: Context): LocationHelper{
-            if (INSTANCE == null){
-                INSTANCE = LocationHelper(context = context)
-            }
-            return INSTANCE!!
-        }
-    }
-
     fun startLocUpdates(callback: (Location)-> Unit){
 
-        val request = LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, 10000)
+        val request = LocationRequest.Builder(
+            Priority.PRIORITY_HIGH_ACCURACY,
+            10000  // request location every 10 seconds
+        )
+            .setWaitForAccurateLocation(true)  // Ensures GPS accuracy, not network fallback
             .setMinUpdateIntervalMillis(5000)
+            .setMinUpdateDistanceMeters(0f)  // update even on 0 meter movement
             .build()
 
         locationCallBack = object : LocationCallback(){

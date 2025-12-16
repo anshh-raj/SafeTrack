@@ -9,7 +9,6 @@ import android.content.Intent
 import android.os.Build
 import android.os.IBinder
 import android.telephony.SmsManager
-import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
 import com.example.safetrack.R
@@ -26,7 +25,7 @@ class ForegroundService : Service(){
 
     private val emergencyNumbers = listOf(
         "8340611053",
-        "8102489714"
+//        "8102489714"
     )
 
     companion object{
@@ -56,25 +55,25 @@ class ForegroundService : Service(){
     override fun onCreate() {
         super.onCreate()
 
-        locationHelper = LocationHelper.getInstance(this)
+        locationHelper = LocationHelper(this)
 
         createNotificationChannel()
 
-        startForeground(NOTIF_ID, createNotification())
-    }
+        startForeground(NOTIF_ID, createNotification(null, null))
 
-    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        locationHelper.startLocUpdates { location ->
-            Log.d(
-                "LocationService",
-                "onStartCommand:  Lat: ${location.latitude} and Long: ${location.longitude}"
-            )
-            val lat = location.latitude
-            val lng = location.longitude
+        locationHelper.startLocUpdates {
+            startForeground(NOTIF_ID, createNotification(it.latitude, it.longitude))
+
+            val lat = it.latitude
+            val lng = it.longitude
             val googleLink = "https://maps.google.com/?q=$lat,$lng"
 
             startSmsTask(googleLink)
         }
+    }
+
+    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+
         return START_STICKY
     }
 
@@ -100,13 +99,25 @@ class ForegroundService : Service(){
         }
     }
 
-    private fun createNotification(): Notification{
+    private fun createNotification(lat: Double?, lon: Double?): Notification{
+
+        val text = if (lat != null && lon != null) "$lat , $lon" else "Fetching location..."
+
         val notification = NotificationCompat.Builder(this, CHANNEL_ID)
-            .setContentText("Sending Location")
-            .setContentTitle("SafeTrack Running")
-            .setSmallIcon(R.drawable.ic_launcher_foreground)
-            .setOngoing(true)
+            .setContentText(text)
+            .setContentTitle("SafeTrack Active")
+            .setSmallIcon(R.drawable.ic_launcher_background)
+
+            .setOngoing(true)  // // Cannot clear on swap
+            .setAutoCancel(false)  // Cannot clear on tap
+            .setOnlyAlertOnce(true)
+            .setForegroundServiceBehavior(NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE)  // Show this notification immediately
+            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC) // Show full notification content even when the phone is locked
             .build()
+
+//         Prevent swipe removal
+        notification.flags = notification.flags or Notification.FLAG_NO_CLEAR
+
         return notification
     }
 
