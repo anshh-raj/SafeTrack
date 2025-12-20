@@ -21,7 +21,7 @@ class ForegroundService : Service(){
     private lateinit var locationHelper: LocationHelper
 
     private var smsTimer: Timer? = null
-    private var elapsedMinutes = 0
+    private var totalExecution = 0
 
     private val emergencyNumbers = listOf(
         "8340611053",
@@ -129,7 +129,7 @@ class ForegroundService : Service(){
         smsTimer!!.schedule(object : TimerTask() {
             override fun run() {
 
-                elapsedMinutes++
+                totalExecution++
 
                 val message = "SOS! My live location:\n$locationLink"
 
@@ -137,7 +137,7 @@ class ForegroundService : Service(){
                     sendSms(number, message)
                 }
 
-                if (elapsedMinutes >= 15) {
+                if (totalExecution >= 60) {
                     smsTimer?.cancel()
                     stopSelf()
                 }
@@ -147,7 +147,8 @@ class ForegroundService : Service(){
 
     private fun sendSms(number: String, message: String){
         val smsManager = getSystemService(SmsManager::class.java)
-        smsManager.sendTextMessage(number, null, message, null, null)
+        smsManager.sendTextMessage(number,
+            null, message, null, null)
     }
 
 }
